@@ -1,0 +1,34 @@
+{
+  "name": "adobe-dc-view-sdk-react-sample",
+  "version": "1.0.0",
+  "private": false,
+  "license": "See license in license.md",
+  "dependencies": {
+    "express": "^4.21.2",
+    "form-data": "^4.0.3",
+    "node-fetch": "^2.7.0",
+    "react": "^16.13.0",
+    "react-dom": "^16.13.0",
+    "react-router-dom": "^5.1.2",
+    "react-scripts": "3.4.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "engines": {
+    "node": ">=8.10.0"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+  }
+}
