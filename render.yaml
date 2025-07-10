@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: my-react-express-app
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: node server.js
+    autoDeploy: true
+    branch: main
