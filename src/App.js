@@ -23,6 +23,7 @@ import CaptureEvents from "./samples/PDF Annotation APIs/CaptureEvents";
 import CRUDAPIs from "./samples/PDF Annotation APIs/CRUDAPIs";
 import HandlingAnnotationsInPDF from "./samples/PDF Annotation APIs/HandlingAnnotationsInPDF";
 import UIConfigurations from "./samples/PDF Annotation APIs/UIConfigurations/UIConfigurations";
+import PDFLoginAndList from "./PDFLoginAndList";
 import { sendSenseiRequest } from './requestMiddleware';
 import "./App.css";
 
@@ -43,6 +44,7 @@ export default class App extends Component {
                     <Route path="/annotationAPIs/captureEvents" component={ CaptureEvents }/>
                     <Route path="/annotationAPIs/handlingInPDF" component={ HandlingAnnotationsInPDF }/>
                     <Route path="/annotationAPIs/UIConfigurations" component={ UIConfigurations }/>
+                    <Route path="/pdf-list-login" component={ PDFLoginAndList }/>
                     <button onClick={sendSenseiRequest} style={{margin: '20px', padding: '10px'}}>Send Sensei API Request</button>
                 </Router>
             </React.Fragment>

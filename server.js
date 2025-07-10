@@ -38,6 +38,125 @@ app.post('/api/sensei', async (req, res) => {
   }
 });
 
+// --- Adobe IMS Authentication Endpoint ---
+app.post('/api/adobe/authenticate', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Email and password required' });
+    }
+
+    const formData = new URLSearchParams();
+    formData.append('grant_type', 'password');
+    formData.append('client_id', 'co-tools-apitest');
+    formData.append('client_secret', 'cbbb6767-7088-4475-ac99-e631ddc42fbf');
+    formData.append('username', email);
+    formData.append('password', password);
+    formData.append('scope', 'AdobeID,openid,DCAPI');
+
+    const response = await fetch('https://ims-na1-stg1.adobelogin.com/ims/token/v1', {
+      method: 'POST',
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(401).json({ error: 'Adobe IMS authentication failed', details: errorText });
+    }
+
+    const tokenResponse = await response.json();
+    if (!tokenResponse.access_token) {
+      return res.status(500).json({ error: 'No access token received from Adobe IMS' });
+    }
+    res.json({ access_token: tokenResponse.access_token });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Adobe PDF Listing Endpoint ---
+app.get('/api/adobe/pdfs', async (req, res) => {
+  try {
+    const { token } = req.query;
+    if (!token) {
+      return res.status(400).json({ error: 'Missing token parameter' });
+    }
+    // For demo, use hardcoded userId as in original code
+    const userId = '1752761880';
+    const adobeBaseURL = 'https://dc-api-v2-stage.adobe.io';
+    // 1. Get root folder info
+    const rootResp = await fetch(`${adobeBaseURL}/${userId}/folders/root`, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/vnd.adobe.dc+json;profile="https://dc-api-v2.adobe.io/schemas/root_v1.json"',
+        'Authorization': `Bearer ${token}`,
+      }
+    });
+    if (!rootResp.ok) {
+      const errorText = await rootResp.text();
+      return res.status(401).json({ error: 'Failed to fetch root folder', details: errorText });
+    }
+    const rootResult = await rootResp.json();
+    if (!rootResult.root_uri) {
+      return res.status(500).json({ error: 'No root_uri in Adobe API response' });
+    }
+    // 2. Get folder contents
+    const contentsUrl = `${rootResult.root_uri}/contents?order_by=name&sort_order=ascending&page_size=100&metadata=basic`;
+    const contentsResp = await fetch(contentsUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/vnd.adobe.dc+json;profile="https://dc-api-v2.adobe.io/schemas/folder_listing_v1.json"',
+        'Authorization': `Bearer ${token}`,
+      }
+    });
+    if (!contentsResp.ok) {
+      const errorText = await contentsResp.text();
+      return res.status(401).json({ error: 'Failed to fetch folder contents', details: errorText });
+    }
+    const folderContents = await contentsResp.json();
+    // 3. Extract PDF filenames and assetUris
+    const pdfs = (folderContents.members || [])
+      .filter(m => m && m.object_type === 'file' && m.type === 'application/pdf' && m.name && m.asset_uri)
+      .map(m => ({ name: m.name, assetUri: m.asset_uri }));
+    res.json({ pdfs });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// --- Adobe PDF Download URI Endpoint ---
+app.get('/api/adobe/pdf-download-uri', async (req, res) => {
+  try {
+    const { assetUri, token } = req.query;
+    if (!assetUri || !token) {
+      return res.status(400).json({ error: 'Missing assetUri or token parameter' });
+    }
+    const downloadUrl = `${assetUri}/uri/download?make_direct_storage_uri=true`;
+    const response = await fetch(downloadUrl, {
+      method: 'GET',
+      headers: {
+        'Accept': 'application/vnd.adobe.dc+json;profile="https://dc-api-v2-stage.adobe.io/schemas/asset_uri_download_v1.json"',
+        'Authorization': `Bearer ${token}`,
+        'x-api-app-info': 'dc-web-app',
+        'x-api-client-id': 'api_browser',
+        'x-request-id': Math.random().toString(36).substring(2)
+      }
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      return res.status(401).json({ error: 'Failed to fetch PDF download URI', details: errorText });
+    }
+    const downloadData = await response.json();
+    res.json({ uri: downloadData.uri });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // --- Serve React static files ---
 app.use(express.static(path.join(__dirname, 'build')));
 app.get('*', (req, res) => {
