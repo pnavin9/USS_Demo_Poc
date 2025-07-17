@@ -2,9 +2,11 @@ const express = require('express');
 const path = require('path');
 const fetch = require('node-fetch');
 const FormData = require('form-data');
+const cors = require('cors');
 
 const app = express();
 app.use(express.json());
+app.use(cors());
 
 // --- /api/sensei proxy route (from setupProxy.js) ---
 app.post('/api/sensei', async (req, res) => {
